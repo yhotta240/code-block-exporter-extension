@@ -4,6 +4,7 @@ import { PopupPanel } from '../popup/panel';
 import { dateTime } from '../utils/date';
 import { clickURL } from '../utils/dom';
 import { getSiteAccessText } from '../utils/permissions';
+import { getSettings, saveSettings, Settings } from '../utils/settings';
 import meta from '../../public/manifest.meta.json';
 
 class PopupManager {
@@ -19,86 +20,92 @@ class PopupManager {
     this.manifestData = chrome.runtime.getManifest();
     this.manifestMetadata = (meta as any) || {};
 
-    this.loadInitialState();
-    this.addEventListeners();
+    this.init();
   }
 
-  private loadInitialState(): void {
-    chrome.storage.local.get(['settings', 'enabled'], (data) => {
-      if (this.enabledElement) {
-        this.enabled = data.enabled || false;
-        this.enabledElement.checked = this.enabled;
-      }
-      this.showMessage(`${this.manifestData.short_name} が起動しました`);
+  private async init(): Promise<void> {
+    await this.loadInitialState();
+    this.addEventListeners();
+    this.initializeUI();
+  }
 
-      // 設定値の読み込み例
-      // const settings = data.settings || {};
-      // if (settings.theme) {
-      //   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement;
-      //   if (themeSelect) themeSelect.value = settings.theme;
-      // }
-    });
+  private async loadInitialState(): Promise<void> {
+    const data = await chrome.storage.local.get('enabled');
+    this.enabled = data.enabled || false;
+    if (this.enabledElement) {
+      this.enabledElement.checked = this.enabled;
+    }
+    this.showMessage(`${this.manifestData.short_name} が起動しました`);
+
+    // 設定の読み込み
+    const settings = await getSettings();
+
+    // クイック拡張子の反映
+    const extInput = document.getElementById('quick-extensions') as HTMLInputElement;
+    if (extInput) extInput.value = settings.quickExtensions.join(', ');
   }
 
   private addEventListeners(): void {
     if (this.enabledElement) {
-      this.enabledElement.addEventListener('change', (event) => {
+      this.enabledElement.addEventListener('change', async (event) => {
         this.enabled = (event.target as HTMLInputElement).checked;
-        chrome.storage.local.set({ enabled: this.enabled }, () => {
-          this.showMessage(this.enabled ? `${this.manifestData.short_name} は有効になっています` : `${this.manifestData.short_name} は無効になっています`);
-        });
+        await chrome.storage.local.set({ enabled: this.enabled });
+        this.showMessage(this.enabled ? `${this.manifestData.short_name} は有効になっています` : `${this.manifestData.short_name} は無効になっています`);
       });
     }
 
     this.setupSettingsListeners();
-    this.initializeUI();
   }
 
   private setupSettingsListeners(): void {
-    // 設定項目のイベントリスナー例
-    //
-    // セレクトボックスの例:
-    // const themeSelect = document.getElementById('theme-select') as HTMLSelectElement;
-    // if (themeSelect) {
-    //   themeSelect.addEventListener('change', (event) => {
-    //     const value = (event.target as HTMLSelectElement).value;
-    //     this.saveSetting('theme', value, `テーマを「${value}」に変更しました`);
-    //   });
-    // }
-    //
-    // チェックボックスの例:
-    // const notificationToggle = document.getElementById('enable-notifications') as HTMLInputElement;
-    // if (notificationToggle) {
-    //   notificationToggle.addEventListener('change', (event) => {
-    //     const checked = (event.target as HTMLInputElement).checked;
-    //     this.saveSetting('notifications', checked, `通知を${checked ? '有効' : '無効'}にしました`);
-    //   });
-    // }
-    //
-    // スライダーの例:
-    // const fontSizeRange = document.getElementById('font-size') as HTMLInputElement;
-    // if (fontSizeRange) {
-    //   fontSizeRange.addEventListener('change', (event) => {
-    //     const value = (event.target as HTMLInputElement).value;
-    //     this.saveSetting('fontSize', value, `フォントサイズを${value}pxに変更しました`);
-    //   });
-    // }
+    // クイック拡張子の変更監視
+    const extInput = document.getElementById('quick-extensions') as HTMLInputElement;
+    if (extInput) {
+      extInput.addEventListener('change', async (e) => {
+        const value = (e.target as HTMLInputElement).value;
+        const extensions = value.split(',')
+          .map(s => s.trim())
+          .filter(s => s.length > 0)
+          .map(s => s.startsWith('.') ? s : `.${s}`);
+
+        await this.updateSettings({ quickExtensions: extensions });
+        this.showMessage(`クイック拡張子を更新しました: ${extensions.join(', ')}`);
+      });
+    }
+  }
+
+  private async updateSettings(settings: Partial<Settings>): Promise<void> {
+    await saveSettings(settings);
+    const updated = await getSettings();
+    this.notifyTabsOfSettingsChange(updated);
+  }
+
+  private notifyTabsOfSettingsChange(settings: Settings): void {
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            action: "SETTINGS_UPDATED",
+            payload: settings
+          }).catch(() => {
+            // 受信側が準備できていないタブは無視
+          });
+        }
+      });
+    });
   }
 
   private initializeUI(): void {
     const short_name = this.manifestData.short_name || this.manifestData.name;
     const title = document.getElementById('title');
-    if (title) {
-      title.textContent = short_name;
-    }
+    if (title) title.textContent = short_name;
+
     const titleHeader = document.getElementById('title-header');
-    if (titleHeader) {
-      titleHeader.textContent = short_name;
-    }
+    if (titleHeader) titleHeader.textContent = short_name;
+
     const enabledLabel = document.getElementById('enabled-label');
-    if (enabledLabel) {
-      enabledLabel.textContent = `${short_name} を有効にする`;
-    }
+    if (enabledLabel) enabledLabel.textContent = `${short_name} を有効にする`;
+
     const newTabButton = document.getElementById('new-tab-button');
     if (newTabButton) {
       newTabButton.addEventListener('click', () => {
@@ -122,44 +129,35 @@ class PopupManager {
       clickURL(extensionLink);
     }
 
-    clickURL(document.getElementById('issue-link'));
+    const issueLink = document.getElementById('issue-link') as HTMLAnchorElement;
+    if (issueLink) clickURL(issueLink);
 
     const extensionId = document.getElementById('extension-id');
-    if (extensionId) {
-      extensionId.textContent = chrome.runtime.id;
-    }
+    if (extensionId) extensionId.textContent = chrome.runtime.id;
+
     const extensionName = document.getElementById('extension-name');
-    if (extensionName) {
-      extensionName.textContent = this.manifestData.name;
-    }
+    if (extensionName) extensionName.textContent = this.manifestData.name;
+
     const extensionVersion = document.getElementById('extension-version');
-    if (extensionVersion) {
-      extensionVersion.textContent = this.manifestData.version;
-    }
+    if (extensionVersion) extensionVersion.textContent = this.manifestData.version;
+
     const extensionDescription = document.getElementById('extension-description');
-    if (extensionDescription) {
-      extensionDescription.textContent = this.manifestData.description ?? '';
-    }
+    if (extensionDescription) extensionDescription.textContent = this.manifestData.description ?? '';
 
     chrome.permissions.getAll((result) => {
       const permissionInfo = document.getElementById('permission-info');
-      const permissions = result.permissions;
-      if (permissionInfo && permissions) {
-        permissionInfo.textContent = permissions.join(', ');
+      if (permissionInfo && result.permissions) {
+        permissionInfo.textContent = result.permissions.join(', ');
       }
 
       const siteAccess = getSiteAccessText(result.origins);
       const siteAccessElement = document.getElementById('site-access');
-      if (siteAccessElement) {
-        siteAccessElement.innerHTML = siteAccess;
-      }
+      if (siteAccessElement) siteAccessElement.innerHTML = siteAccess;
     });
 
     chrome.extension.isAllowedIncognitoAccess((isAllowedAccess) => {
       const incognitoEnabled = document.getElementById('incognito-enabled');
-      if (incognitoEnabled) {
-        incognitoEnabled.textContent = isAllowedAccess ? '有効' : '無効';
-      }
+      if (incognitoEnabled) incognitoEnabled.textContent = isAllowedAccess ? '有効' : '無効';
     });
 
     const languageMap: { [key: string]: string } = { 'en': '英語', 'ja': '日本語' };
@@ -178,7 +176,7 @@ class PopupManager {
     const githubLink = document.getElementById('github-link') as HTMLAnchorElement;
     githubLink.href = this.manifestMetadata.github_url;
     githubLink.textContent = this.manifestMetadata.github_url;
-    clickURL(document.getElementById('github-link'));
+    if (githubLink) clickURL(githubLink);
   }
 
   private showMessage(message: string, timestamp: string = dateTime()) {

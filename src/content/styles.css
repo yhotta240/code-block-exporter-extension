@@ -1,0 +1,300 @@
+/* 基本コンテナ */
+.code-exporter-wrapper {
+  position: relative;
+}
+
+/* クイックパネルのトリガー（常に表示される小さなボタン） */
+.code-exporter-quick-trigger {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f3f4;
+  opacity: 0.8;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+}
+
+.code-exporter-quick-trigger:hover {
+  background-color: #ffffff;
+  border-color: #bdc1c6;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3);
+}
+
+.code-exporter-quick-icon {
+  width: 20px;
+  height: 20px;
+  fill: #5f6368;
+}
+
+/* ポップオーバー本体（Top Layer に表示される） */
+.code-exporter-quick-panel {
+  border: inherit !important;
+  background-color: inherit !important;
+  padding: 12px !important;
+  margin: 0 !important;
+  box-shadow: 0 4px 12px rgba(100, 100, 100, 0.30) !important;
+  border-radius: 8px !important;
+  overflow: visible !important;
+  display: none;
+  /* 初期状態 */
+  flex-direction: column;
+  gap: 8px;
+  min-width: 300px;
+  /* Popover なら不要だが念のため */
+  z-index: 2147483647 !important;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Popover 表示中 */
+.code-exporter-quick-panel:popover-open {
+  display: flex;
+}
+
+.code-exporter-quick-tool-header {
+  font-size: 14px;
+  font-weight: bold;
+  color: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.code-exporter-quick-util {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.code-exporter-copy-btn,
+.code-exporter-copy-markdown-btn {
+  background: none;
+  border: 1px solid rgba(127, 127, 127, 0.5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.code-exporter-copy-btn:hover,
+.code-exporter-copy-markdown-btn:hover {
+  transform: translateY(-1px);
+}
+
+.code-exporter-copy-btn svg,
+.code-exporter-copy-markdown-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* コピー成功時の一時表示 */
+.code-exporter-copy-success {
+  background-color: #1b5e20;
+  color: #ffffff;
+  border-color: transparent;
+  transform: translateY(0);
+}
+
+.code-exporter-copy-success svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* 入力欄とボタン群の内容（Popover 内では常に visible） */
+.code-exporter-quick-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* width: 100%; */
+}
+
+.code-exporter-filename-container {
+  position: relative;
+  /* width: 100%; */
+}
+
+/* ファイル名入力欄 */
+.code-exporter-filename-input {
+  width: 100%;
+  /* 右端にクリアボタン分の余白を確保 */
+  padding: 6px 28px 6px 8px;
+  font-size: 12px;
+  border: 1px solid rgba(127, 127, 127, 0.5);
+  border-radius: 4px;
+  outline: none;
+  background-color: transparent;
+  box-sizing: border-box;
+  color: inherit;
+}
+
+.code-exporter-filename-input:focus {
+  border-color: #1a73e8;
+  background: inherit;
+}
+
+.code-exporter-clear-filename-btn {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: #797d83;
+  box-shadow: none;
+  font-size: 20px;
+  border: none;
+}
+
+.code-exporter-clear-filename-btn:hover {
+  color: inherit;
+  opacity: 1;
+}
+
+/* 拡張子ボタン列のコンテナ */
+.code-exporter-ext-list {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+/* 左側の固定コントロール（カスタム入力，自動判別，区切り線） */
+.code-exporter-static-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 右側の拡張子グリッド（折り返し対応） */
+.code-exporter-ext-grid {
+  display: grid;
+  grid-template-columns: repeat(5, min-content);
+  gap: 6px;
+  flex-grow: 1;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+/* 初期状態（折り畳み時）は 1 行分のみ表示 */
+.code-exporter-ext-grid.collapsed {
+  max-height: 28px;
+}
+
+/* 展開用トグルボタン */
+.code-exporter-ext-toggle-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  opacity: 0.6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.code-exporter-ext-toggle-btn:hover {
+  background-color: #f1f3f4;
+  opacity: 1;
+}
+
+.code-exporter-toggle-icon {
+  width: 16px;
+  height: 16px;
+  fill: #5f6368;
+  transition: transform 0.3s ease;
+}
+
+.code-exporter-ext-grid:not(.collapsed)+.code-exporter-ext-toggle-btn .code-exporter-toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* カスタム拡張子入力欄 */
+.code-exporter-custom-ext-input {
+  width: 44px;
+  padding: 3px 5px;
+  font-size: 11px;
+  border: 1px solid rgba(127, 127, 127, 0.5);
+  border-radius: 3px;
+  outline: none;
+  background: transparent;
+  text-align: center;
+}
+
+.code-exporter-custom-ext-input:focus {
+  border-color: #1a73e8;
+}
+
+/* 自動判別拡張子ボタン (オレンジ) */
+.code-exporter-auto-ext-btn {
+  background-color: #fef7e0;
+  color: #e37400;
+  border: 1px solid #fbce44;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.code-exporter-auto-ext-btn:hover {
+  background-color: #feeaa0;
+  transform: translateY(-1px);
+}
+
+/* 区切り線 */
+.code-exporter-divider {
+  width: 1px;
+  height: 20px;
+  background-color: #dadce0;
+  margin: 0 2px;
+}
+
+.code-exporter-ext-btn {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: center;
+}
+
+.code-exporter-ext-btn:hover {
+  background-color: #d2e3fc;
+  transform: translateY(-1px);
+}
