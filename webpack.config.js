@@ -16,7 +16,7 @@ module.exports = {
   context: SRC,
   entry: {
     background: isDev ? path.join(SRC, "background.dev.ts") : path.join(SRC, "background.ts"),
-    content: path.join(SRC, "content.ts"),
+    content: path.join(SRC, "content", "index.ts"),
     popup: path.join(SRC, "popup", "popup.ts")
   },
   output: {
