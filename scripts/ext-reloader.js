@@ -22,7 +22,7 @@ class ExtensionReloader {
       return
     }
 
-    // グローバルに既存のサーバ参照を保持しておき、複数インスタンスでポート競合しないようにする
+    // グローバルに既存のサーバ参照を保持しておき，複数インスタンスでポート競合しないようにする
     // 他の webpack プラグインインスタンスが同一プロセス内で既にサーバを持っている場合はそれを再利用する
     if (global.__EXT_RELOADER_WSS && global.__EXT_RELOADER_WSS.port === this.port) {
       this.wss = global.__EXT_RELOADER_WSS.instance

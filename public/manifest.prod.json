@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Chrome Extension Starter Kit",
-  "short_name": "Chrome Extension Starter Kit",
-  "version": "0.1.0",
-  "description": "",
+  "name": "Code Block Exporter",
+  "short_name": "Code Block Exporter",
+  "version": "0.0.1",
+  "description": "WEB ページ上のコードブロックを簡単にエクスポートします",
   "icons": {
     "48": "icons/icon.png"
   },

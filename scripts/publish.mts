@@ -55,7 +55,7 @@ async function main() {
     // 環境変数の確認
     if (!extensionId || !clientId || !clientSecret || !refreshToken) {
       throw new Error(
-        '必要な環境変数が設定されていません。\n' +
+        '必要な環境変数が設定されていません\n' +
         '.envファイルに以下の項目を設定してください：\n' +
         '  - EXTENSION_ID\n' +
         '  - CLIENT_ID\n' +
