@@ -30,3 +30,18 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
   const updated = { ...current, ...settings };
   await chrome.storage.local.set({ settings: updated });
 }
+
+/**
+ * 拡張機能が有効かどうかを取得する
+ */
+export async function isEnabled(): Promise<boolean> {
+  const data = await chrome.storage.local.get("enabled");
+  return data.enabled || false;
+}
+
+/**
+ * 拡張機能の有効状態を保存する
+ */
+export async function setEnabled(enabled: boolean): Promise<void> {
+  await chrome.storage.local.set({ enabled });
+}

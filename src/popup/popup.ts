@@ -50,9 +50,29 @@ class PopupManager {
       this.enabledElement.addEventListener('change', async (event) => {
         this.enabled = (event.target as HTMLInputElement).checked;
         await chrome.storage.local.set({ enabled: this.enabled });
-        this.showMessage(this.enabled ? `${this.manifestData.short_name} は有効になっています` : `${this.manifestData.short_name} は無効になっています`);
       });
     }
+
+    // 同期変更の監視
+    chrome.storage.onChanged.addListener((changes) => {
+      if (changes.enabled) {
+        const enabled = changes.enabled.newValue;
+        if (this.enabledElement) {
+          this.enabledElement.checked = enabled;
+          this.showMessage(enabled ? `${this.manifestData.short_name} は有効になっています` : `${this.manifestData.short_name} は無効になっています`);
+        }
+      }
+
+      // 設定（Settings）が変更された場合，UI に反映する
+      if (changes.settings) {
+        const newSettings = changes.settings.newValue as Settings;
+        const extInput = document.getElementById('quick-extensions') as HTMLInputElement;
+        if (extInput && newSettings && Array.isArray(newSettings.quickExtensions)) {
+          extInput.value = newSettings.quickExtensions.join(', ');
+          this.showMessage('拡張子を更新しました');
+        }
+      }
+    });
 
     this.setupSettingsListeners();
   }
@@ -61,7 +81,7 @@ class PopupManager {
     // クイック拡張子の変更監視
     const extInput = document.getElementById('quick-extensions') as HTMLInputElement;
     if (extInput) {
-      extInput.addEventListener('change', async (e) => {
+      extInput.addEventListener('input', async (e) => {
         const value = (e.target as HTMLInputElement).value;
         const extensions = value.split(',')
           .map(s => s.trim())
@@ -69,30 +89,12 @@ class PopupManager {
           .map(s => s.startsWith('.') ? s : `.${s}`);
 
         await this.updateSettings({ quickExtensions: extensions });
-        this.showMessage(`クイック拡張子を更新しました: ${extensions.join(', ')}`);
       });
     }
   }
 
   private async updateSettings(settings: Partial<Settings>): Promise<void> {
     await saveSettings(settings);
-    const updated = await getSettings();
-    this.notifyTabsOfSettingsChange(updated);
-  }
-
-  private notifyTabsOfSettingsChange(settings: Settings): void {
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach(tab => {
-        if (tab.id) {
-          chrome.tabs.sendMessage(tab.id, {
-            action: "SETTINGS_UPDATED",
-            payload: settings
-          }).catch(() => {
-            // 受信側が準備できていないタブは無視
-          });
-        }
-      });
-    });
   }
 
   private initializeUI(): void {

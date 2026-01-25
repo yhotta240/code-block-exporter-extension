@@ -6,7 +6,7 @@ import { generateBaseFileName } from "utils/filename-generator";
 
 export function buildTrigger(): HTMLDivElement {
   const trigger = document.createElement("div");
-  trigger.className = "code-exporter-quick-trigger code-exporter-quick-trigger-injected";
+  trigger.className = "code-exporter-quick-trigger hidden";
   const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   icon.setAttribute("viewBox", "0 0 24 24");
   icon.setAttribute("class", "code-exporter-quick-icon");
@@ -160,33 +160,27 @@ export function buildExtList(settings: Settings, executeDownload: (ext: string) 
     const btn = document.createElement("button");
     btn.textContent = ext;
     btn.className = "code-exporter-ext-btn";
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      executeDownload(ext);
-    });
     extGrid.appendChild(btn);
   });
   extList.appendChild(extGrid);
 
-  if (settings.quickExtensions.length > 5) {
-    const toggleBtn = document.createElement("button");
-    toggleBtn.className = "code-exporter-ext-toggle-btn";
-    toggleBtn.title = "もっと表示 / 折りたたむ";
-    const toggleIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    toggleIcon.setAttribute("viewBox", "0 0 24 24");
-    toggleIcon.setAttribute("class", "code-exporter-toggle-icon");
-    const togglePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    togglePath.setAttribute("d", "M7 10l5 5 5-5z");
-    toggleIcon.appendChild(togglePath);
-    toggleBtn.appendChild(toggleIcon);
-    toggleBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      extGrid.classList.toggle("collapsed");
-    });
-    extList.appendChild(toggleBtn);
-  }
+  const toggleBtn = document.createElement("button");
+  toggleBtn.className = "code-exporter-ext-toggle-btn hidden";
+  toggleBtn.title = "もっと表示 / 折りたたむ";
+  const toggleIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  toggleIcon.setAttribute("viewBox", "0 0 24 24");
+  toggleIcon.setAttribute("class", "code-exporter-toggle-icon");
+  const togglePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  togglePath.setAttribute("d", "M7 10l5 5 5-5z");
+  toggleIcon.appendChild(togglePath);
+  toggleBtn.appendChild(toggleIcon);
+  toggleBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    extGrid.classList.toggle("collapsed");
+  });
+  toggleBtn.classList.toggle("hidden", settings.quickExtensions.length <= 5);
+  extList.appendChild(toggleBtn);
 
   return extList;
 }
@@ -216,14 +210,16 @@ export function attachPanelBehavior(trigger: HTMLDivElement, panel: HTMLDivEleme
   });
 
   panel.addEventListener("mouseenter", () => clearTimeout(hideTimeout));
-  panel.addEventListener("mouseleave", () => { /* @ts-ignore */ (panel as any).hidePopover(); });
+  panel.addEventListener("mouseleave", () => { /* @ts-ignore */ panel.hidePopover(); });
 }
 
 /**
  * クイックダウンロードパネルを注入する
  */
 export function injectQuickPanel(codeElement: HTMLElement, settings: Settings): void {
+  // トリガーボタン
   const trigger = buildTrigger();
+
   // ポップオーバーパネル（トップレイヤーに表示される）
   const panel = document.createElement("div");
   panel.className = "code-exporter-quick-panel code-exporter-injected";
@@ -261,36 +257,61 @@ export function injectQuickPanel(codeElement: HTMLElement, settings: Settings): 
   const extList = buildExtList(settings, executeDownload, autoExt);
   content.appendChild(extList);
 
+  // イベント委譲で拡張子ボタンを処理する（updateExtList が再生成しても動作する）
+  const delegatedGrid = extList.querySelector('.code-exporter-ext-grid') as HTMLElement | null;
+  if (delegatedGrid) {
+    delegatedGrid.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target && target.classList.contains('code-exporter-ext-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const ext = (target.textContent || '').trim();
+        if (ext) executeDownload(ext);
+      }
+    });
+  }
+
   panel.appendChild(content);
   // トップレイヤーに追加
   document.body.appendChild(panel);
 
   // 表示・挙動をアタッチ
-  setupPlacement(codeElement, trigger);
+  codeElement.appendChild(trigger);
   attachPanelBehavior(trigger, panel);
 }
 
 /**
- * 要素の配置設定
+ * トリガーの表示・非表示を切り替える
  */
-function setupPlacement(codeElement: HTMLElement, element: HTMLElement): void {
-  const parent = codeElement.parentElement;
+export function toggleTriggerVisibility(visible: boolean): void {
+  const quickTriggers = document.querySelectorAll('.code-exporter-quick-trigger') as NodeListOf<HTMLElement>;
+  quickTriggers.forEach(trigger => {
+    trigger.classList.toggle("hidden", !visible);
+  });
+}
 
-  if (parent && parent.tagName.toLowerCase() === "pre") {
-    const grandParent = parent.parentElement;
-    const hasContentSiblings = grandParent && Array.from(grandParent.children).some((child) => child !== parent && /^(P|H[1-6])$/i.test(child.tagName));
+/**
+ * 拡張子リストを更新する
+ */
+export function updateExtList(settings: Settings): void {
+  const extGrid = document.querySelectorAll('.code-exporter-ext-grid') as NodeListOf<HTMLElement>;
+  const extToggleBtns = document.querySelectorAll('.code-exporter-ext-toggle-btn') as NodeListOf<HTMLButtonElement>;
 
-    if (grandParent && !hasContentSiblings) {
-      grandParent.classList.add("code-exporter-wrapper");
-      grandParent.appendChild(element);
-    } else {
-      parent.classList.add("code-exporter-wrapper");
-      parent.appendChild(element);
-    }
-  } else {
-    codeElement.classList.add("code-exporter-wrapper");
-    codeElement.insertAdjacentElement("beforebegin", element);
-  }
+  extGrid.forEach(grid => {
+    // 既存の拡張子ボタンをクリア
+    grid.innerHTML = '';
+    // 新しい拡張子ボタンを追加
+    settings.quickExtensions.forEach((ext) => {
+      const btn = document.createElement("button");
+      btn.textContent = ext;
+      btn.className = "code-exporter-ext-btn";
+      grid.appendChild(btn);
+    });
+    // 折りたたみ状態の更新
+    extToggleBtns.forEach((extToggleBtn: HTMLButtonElement) => {
+      extToggleBtn.classList.toggle("hidden", settings.quickExtensions.length <= 5);
+    });
+  });
 }
 
 /**
