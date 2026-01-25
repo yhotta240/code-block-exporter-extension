@@ -22,6 +22,13 @@ export function buildToolHeader(codeElement: HTMLElement): HTMLDivElement {
   contentHeader.className = "code-exporter-quick-tool-header";
   const manifest = chrome.runtime.getManifest();
   contentHeader.textContent = manifest.short_name || manifest.name;
+  const iconURL = chrome.runtime.getURL("icons/icon.png");
+  const iconImg = document.createElement("img");
+  iconImg.src = iconURL;
+  iconImg.className = "code-exporter-quick-tool-icon";
+  iconImg.width = 20;
+  iconImg.height = 20;
+  contentHeader.prepend(iconImg);
 
   const utils = document.createElement("div");
   utils.className = "code-exporter-quick-util";
