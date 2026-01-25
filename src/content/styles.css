@@ -29,6 +29,10 @@
   box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3);
 }
 
+.code-exporter-quick-trigger.hidden {
+  display: none;
+}
+
 .code-exporter-quick-icon {
   width: 20px;
   height: 20px;
@@ -123,7 +127,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  /* width: 100%; */
+  width: 100%;
 }
 
 .code-exporter-filename-container {
@@ -223,6 +227,10 @@
 .code-exporter-ext-toggle-btn:hover {
   background-color: #f1f3f4;
   opacity: 1;
+}
+
+.code-exporter-ext-toggle-btn.hidden {
+  display: none;
 }
 
 .code-exporter-toggle-icon {
