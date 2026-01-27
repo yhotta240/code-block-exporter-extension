@@ -1,20 +1,21 @@
 # Code Block Exporter
 
-Web ページ上のコードブロックを，サクッとコピー・ダウンロードできる Chrome 拡張機能です．
-コードを保存したり，使い回したりする作業を，できるだけ手間なく行えるようにします．
+WEB ページ上のコードブロックを簡単にコピーやダウンロードができる Chrome 拡張機能です．
+コードのコピー，Markdown ブロック形式でのコピーおよび選択した拡張子でのファイルダウンロードをできるだけ手間なく行えるようにします．
 
 ## 特徴
 
 - コードブロックをワンクリックでコピー／ダウンロード
-- GitHub，Stack Overflow，Qiita，Zenn などの定番技術サイトに対応
-- 拡張子を選んでエクスポート可能
-- コードブロックの情報をもとに拡張子を自動判定
+- 拡張子を選ぶだけでコードを簡単にダウンロード
+- ChatGPT，Gemini，Note，Qiita，Zenn などの定番サイトに対応
+- Markdown ブロック形式でそのままコピー可能
+- 周辺情報からコードブロック内の言語を自動で提案
 
 ## インストール
 
 ### Chrome Web Store からインストール
 
-準備中…
+[Code Block Exporter - Chrome ウェブストア](https://chromewebstore.google.com/detail/ilciggfacnmflkangceajohffplefncc?utm_source=item-share-cb)
 
 ### 手動インストール
 
