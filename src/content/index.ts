@@ -25,7 +25,16 @@ async function init(): Promise<void> {
 function scanAndSetupBlocks(): void {
   if (!currentSettings) return;
   const blocks = getCodeBlocks();
-  // console.log(`コードブロックを ${blocks.length} 個検出しました`,blocks);
+
+  // block が code または pre タグの場合，親要素に position: relative を設定する
+  blocks.forEach((b) => {
+    const tagName = b.tagName.toLowerCase();
+    const parentTag = b.parentElement?.tagName.toLowerCase();
+    if (tagName === "code" || tagName === "pre" || parentTag === "pre") {
+      ensureRelativePositioning(b.parentElement as HTMLElement)
+    }
+  });
+
   blocks.forEach((b) => setupCodeBlockPanel(b as HTMLElement));
 }
 
@@ -109,6 +118,16 @@ function getCodeBlocks(): Element[] {
 
     return false;
   });
+}
+
+/**
+ * 要素に position: relative スタイルを適用する
+ */
+function ensureRelativePositioning(element: HTMLElement): void {
+  const computedStyle = window.getComputedStyle(element);
+  if (computedStyle.position === "static") {
+    element.style.position = "relative";
+  }
 }
 
 // 実行
