@@ -132,6 +132,7 @@ class PopupManager {
     }
 
     const issueLink = document.getElementById('issue-link') as HTMLAnchorElement;
+    issueLink.href = this.manifestMetadata.issueUrl || '';
     if (issueLink) clickURL(issueLink);
 
     const extensionId = document.getElementById('extension-id');
