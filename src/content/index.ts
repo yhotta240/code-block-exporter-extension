@@ -92,14 +92,18 @@ function getCodeBlocks(): Element[] {
   const all = Array.from(document.querySelectorAll("pre, code"));
   // フィルタリングして有効なコードブロックのみを返す( trueであれば有効なコードブロック )
   return all.filter((el) => {
-    // pre 要素の場合，その直下の子要素 (el.children) に code 要素が含まれていたら除外する
+    // pre 要素の場合
     if (el.tagName.toLowerCase() === "pre") {
+      // code クラスが含まれていたら有効とする
+      const codeClassChild = Array.from(el.children).find((c) => c.classList.toString().toLowerCase().includes("code"));
       // code 要素が含まれていたら除外する
-      const child = Array.from(el.children).find((c) => c.tagName.toLowerCase() === "code");
-      // span 要素が含まれていたら除外しない
+      const codeChild = Array.from(el.children).find((c) => c.tagName.toLowerCase() === "code");
+      // span 要素が含まれていたら有効とする
       const spanChild = Array.from(el.children).find((c) => c.tagName.toLowerCase() === "span");
+      // 文章要素が含まれている場合は除外する
+      const hasTextElementChild = Array.from(el.children).some((c) => /^(P|H[1-6]|STRONG|TD|A)$/i.test(c.tagName));
 
-      return child === undefined && spanChild !== undefined;
+      return codeClassChild !== undefined || codeChild === undefined && spanChild !== undefined && !hasTextElementChild;
     }
 
     if (el.tagName.toLowerCase() === "code") {
@@ -107,12 +111,14 @@ function getCodeBlocks(): Element[] {
       if (parent) {
         // code 要素の同階層に他の code タグが2つ以上あったら除外する
         const siblingCodes = Array.from(parent.children).filter((c) => c.tagName.toLowerCase() === "code");
-        // parent が文章要素 (p, h1-h6, strong, td) の場合も除外する
-        const isParagraphOrHeading = /^(P|H[1-6]|STRONG|TD)$/i.test(parent.tagName);
+        // parent が文章要素 (p, h1-h6, strong, td, a,) の場合も除外する
+        const isParagraphOrHeading = /^(P|H[1-6]|STRONG|TD|A)$/i.test(parent.tagName);
         // parent のtextContent が 自身のtextContent と等しい場合も除外する (コード以外のテキストが含まれていない)
         const isTextContentEqual = parent.textContent?.trim() === el.textContent?.trim();
+        // code 要素の子要素に文章要素が含まれている場合も除外する
+        const hasTextElementChild = Array.from(el.children).some((c) => /^(P|H[1-6]|STRONG|TD|A)$/i.test(c.tagName));
 
-        return siblingCodes.length <= 1 && !isParagraphOrHeading && isTextContentEqual;
+        return siblingCodes.length <= 1 && !isParagraphOrHeading && isTextContentEqual && !hasTextElementChild;
       }
     }
 
