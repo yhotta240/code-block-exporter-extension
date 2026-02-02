@@ -4,27 +4,26 @@ import { PopupPanel } from '../popup/panel';
 import { dateTime } from '../utils/date';
 import { clickURL } from '../utils/dom';
 import { getSiteAccessText } from '../utils/permissions';
-import { getSettings, saveSettings, Settings } from '../utils/settings';
+import { DEFAULT_SETTINGS, getSettings, saveSettings, Settings } from '../utils/settings';
 import meta from '../../public/manifest.meta.json';
+import { applyTheme, initThemeMenu } from './theme';
 
 class PopupManager {
   private panel: PopupPanel;
   private enabled: boolean = false;
-  private enabledElement: HTMLInputElement | null;
   private manifestData: chrome.runtime.Manifest;
   private manifestMetadata: { [key: string]: any } = (meta as any) || {};
+  private enabledElement: HTMLInputElement | null;
+  private extInputElement: HTMLInputElement | null;
 
   constructor() {
     this.panel = new PopupPanel();
-    this.enabledElement = document.getElementById('enabled') as HTMLInputElement;
     this.manifestData = chrome.runtime.getManifest();
     this.manifestMetadata = (meta as any) || {};
+    this.enabledElement = document.getElementById('enabled') as HTMLInputElement;
+    this.extInputElement = document.getElementById('quick-extensions') as HTMLInputElement;
 
-    this.init();
-  }
-
-  private async init(): Promise<void> {
-    await this.loadInitialState();
+    this.loadInitialState();
     this.addEventListeners();
     this.initializeUI();
   }
@@ -40,9 +39,11 @@ class PopupManager {
     // 設定の読み込み
     const settings = await getSettings();
 
+    // テーマの適用
+    applyTheme(settings.theme || DEFAULT_SETTINGS.theme);
+
     // クイック拡張子の反映
-    const extInput = document.getElementById('quick-extensions') as HTMLInputElement;
-    if (extInput) extInput.value = settings.quickExtensions.join(', ');
+    if (this.extInputElement) this.extInputElement.value = settings.quickExtensions.join(', ');
   }
 
   private addEventListeners(): void {
@@ -62,26 +63,16 @@ class PopupManager {
           this.showMessage(enabled ? `${this.manifestData.short_name} は有効になっています` : `${this.manifestData.short_name} は無効になっています`);
         }
       }
-
-      // 設定（Settings）が変更された場合，UI に反映する
-      if (changes.settings) {
-        const newSettings = changes.settings.newValue as Settings;
-        const extInput = document.getElementById('quick-extensions') as HTMLInputElement;
-        if (extInput && newSettings && Array.isArray(newSettings.quickExtensions)) {
-          extInput.value = newSettings.quickExtensions.join(', ');
-          this.showMessage('拡張子を更新しました');
-        }
-      }
     });
 
-    this.setupSettingsListeners();
-  }
+    initThemeMenu(async (theme) => {
+      await this.updateSettings({ theme });
+      this.showMessage(`テーマを ${theme} に変更しました`);
+    });
 
-  private setupSettingsListeners(): void {
     // クイック拡張子の変更監視
-    const extInput = document.getElementById('quick-extensions') as HTMLInputElement;
-    if (extInput) {
-      extInput.addEventListener('input', async (e) => {
+    if (this.extInputElement) {
+      this.extInputElement.addEventListener('input', async (e) => {
         const value = (e.target as HTMLInputElement).value;
         const extensions = value.split(',')
           .map(s => s.trim())
@@ -89,6 +80,7 @@ class PopupManager {
           .map(s => s.startsWith('.') ? s : `.${s}`);
 
         await this.updateSettings({ quickExtensions: extensions });
+        this.showMessage('拡張子を更新しました');
       });
     }
   }

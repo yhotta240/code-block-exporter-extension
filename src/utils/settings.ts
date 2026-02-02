@@ -4,14 +4,18 @@
 
 export type DownloadMode = "dialog" | "quick";
 
+export type Theme = 'system' | 'light' | 'dark';
+
 export interface Settings {
   downloadMode: DownloadMode;
   quickExtensions: string[];
+  theme: Theme;
 }
 
-const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
   downloadMode: "dialog",
   quickExtensions: [".js", ".py", ".ts", ".txt"],
+  theme: 'system',
 };
 
 /**
