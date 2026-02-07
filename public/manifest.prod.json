@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Code Block Exporter",
   "short_name": "Code Block Exporter",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "WEB ページ上のコードブロックを簡単にエクスポートします",
   "icons": {
     "48": "icons/icon.png"
