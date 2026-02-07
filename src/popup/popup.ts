@@ -4,9 +4,17 @@ import { PopupPanel } from '../popup/panel';
 import { dateTime } from '../utils/date';
 import { clickURL } from '../utils/dom';
 import { getSiteAccessText } from '../utils/permissions';
-import { DEFAULT_SETTINGS, getSettings, saveSettings, Settings } from '../utils/settings';
+import { getSettings, saveSettings, Settings, Theme } from '../utils/settings';
 import meta from '../../public/manifest.meta.json';
-import { applyTheme, initThemeMenu } from './theme';
+import { applyTheme, getTheme, setupThemeMenu, } from './theme';
+
+try {
+  // フラッシュ防止のため先にテーマを適用
+  const theme = getTheme();
+  applyTheme(theme);
+} catch (e) {
+  // ignore
+}
 
 class PopupManager {
   private panel: PopupPanel;
@@ -39,9 +47,6 @@ class PopupManager {
     // 設定の読み込み
     const settings = await getSettings();
 
-    // テーマの適用
-    applyTheme(settings.theme || DEFAULT_SETTINGS.theme);
-
     // クイック拡張子の反映
     if (this.extInputElement) this.extInputElement.value = settings.quickExtensions.join(', ');
   }
@@ -65,9 +70,13 @@ class PopupManager {
       }
     });
 
-    initThemeMenu(async (theme) => {
-      await this.updateSettings({ theme });
-      this.showMessage(`テーマを ${theme} に変更しました`);
+    setupThemeMenu((value: Theme) => {
+      try {
+        applyTheme(value);
+        this.showMessage(`テーマを ${value} に変更しました`);
+      } catch (e) {
+        this.showMessage('テーマ設定の保存に失敗しました');
+      }
     });
 
     // クイック拡張子の変更監視

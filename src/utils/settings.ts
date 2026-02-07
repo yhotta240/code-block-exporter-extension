@@ -9,13 +9,11 @@ export type Theme = 'system' | 'light' | 'dark';
 export interface Settings {
   downloadMode: DownloadMode;
   quickExtensions: string[];
-  theme: Theme;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   downloadMode: "dialog",
   quickExtensions: [".js", ".py", ".ts", ".txt"],
-  theme: 'system',
 };
 
 /**
